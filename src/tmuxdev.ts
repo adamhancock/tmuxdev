@@ -84,6 +84,18 @@ async function main(): Promise<void> {
   // Handle command line arguments
   const command = argv._[0]
   
+  // If no command provided, default to start behavior
+  if (!command) {
+    if (exists) {
+      echo(chalk.yellow(`Session '${sessionName}' already exists. Attaching...`))
+      await attachSession(sessionName)
+    } else {
+      await createSession(sessionName)
+      await attachSession(sessionName)
+    }
+    return
+  }
+  
   if (command === 'start' || command === 's') {
     if (exists) {
       echo(chalk.yellow(`Session '${sessionName}' already exists. Attaching...`))
@@ -123,19 +135,24 @@ async function main(): Promise<void> {
     return
   }
   
-  if (command === 'help' || command === 'h' || argv.help || argv.h) {
+  if (command === 'menu' || command === 'm') {
+    // Continue to interactive menu
+  } else if (command === 'help' || command === 'h' || argv.help || argv.h) {
     echo(chalk.blue.bold('\n🖥️  tmuxdev - Tmux session manager for development'))
     echo(chalk.gray('  Automatically manages tmux sessions using folder and branch names'))
     
     echo(chalk.yellow('\n📋 Usage:'))
-    echo('  tmuxdev              ' + chalk.gray('Interactive mode with menu'))
+    echo('  tmuxdev              ' + chalk.gray('Start/attach to session for current directory'))
+    echo('  tmuxdev menu|m       ' + chalk.gray('Interactive menu for session management'))
     echo('  tmuxdev start|s      ' + chalk.gray('Start and attach to session for current directory'))
     echo('  tmuxdev attach|a     ' + chalk.gray('Attach to existing session for current directory'))
     echo('  tmuxdev help|h       ' + chalk.gray('Show this help message'))
     
     echo(chalk.yellow('\n⚡ Quick Examples:'))
-    echo(chalk.gray('  # Quick start and attach'))
-    echo('  $ tmuxdev s')
+    echo(chalk.gray('  # Quick start for current directory'))
+    echo('  $ tmuxdev')
+    echo(chalk.gray('  # Interactive menu'))
+    echo('  $ tmuxdev m')
     echo(chalk.gray('  # Attach to existing session'))
     echo('  $ tmuxdev a')
     
@@ -151,9 +168,14 @@ async function main(): Promise<void> {
     echo('  Session exists:    ' + (exists ? chalk.green('Yes') : chalk.red('No')))
     
     return
+  } else if (command) {
+    // Unknown command
+    echo(chalk.red(`Unknown command: ${command}`))
+    echo(chalk.gray('Run "tmuxdev help" for usage information'))
+    process.exit(1)
   }
   
-  // Interactive mode
+  // Interactive menu mode (only reached with 'menu' or 'm' command)
   const allSessions = await getAllSessions()
   const choices: Choice[] = []
   

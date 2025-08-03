@@ -17,6 +17,13 @@ yarn global add @adamhancock/tmuxdev
 ### Quick Commands
 
 ```bash
+# Quick start - creates/attaches to session for current directory
+tmuxdev
+
+# Interactive menu for session management
+tmuxdev menu
+tmuxdev m        # short alias
+
 # Start and attach to session for current directory
 tmuxdev start
 tmuxdev s        # short alias
@@ -30,14 +37,15 @@ tmuxdev help
 tmuxdev h        # short alias
 tmuxdev --help   # or use flags
 tmuxdev -h
-
-# Interactive mode (default)
-tmuxdev
 ```
 
-### Interactive Mode
+### Default Behavior
 
-When you run `tmuxdev` without arguments, you get an interactive menu:
+When you run `tmuxdev` without arguments, it automatically creates or attaches to a session for your current directory.
+
+### Interactive Menu
+
+When you run `tmuxdev menu` (or `tmuxdev m`), you get an interactive menu:
 
 - **Start/Attach to current directory session** - Manages a session named after your current folder and branch
 - **Select from existing sessions** - Browse and attach to any running tmux session
