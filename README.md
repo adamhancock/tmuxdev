@@ -50,7 +50,7 @@ When you run `tmuxdev` without arguments, you get an interactive menu:
 - **🎯 Quick Commands**: Jump straight into work with `tmuxdev s` for instant session start
 - **📋 Interactive Menu**: User-friendly interface with arrow key navigation
 - **🔄 Session Management**: Create, attach, list, and kill tmux sessions effortlessly
-- **🚀 Dev Server Integration**: Automatically runs `pnpm dev` when creating new sessions
+- **🚀 Dev Server Integration**: Automatically runs `npm run dev` when creating new sessions
 - **⚡ Fast Context Switching**: Quickly jump between different project sessions
 - **🛡️ Graceful Exit Handling**: Properly handles Ctrl+C interruptions
 
@@ -68,7 +68,7 @@ Once attached to a session:
 
 - Node.js 16+
 - tmux installed on your system
-- A project with `pnpm dev` script (or modify the source to use your preferred command)
+- A project with a `dev` script in package.json (or modify the source to use your preferred command)
 
 ## 💡 Why tmuxdev?
 

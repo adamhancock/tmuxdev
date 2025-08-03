@@ -50,8 +50,8 @@ async function getAllSessions(): Promise<string[]> {
 }
 
 async function createSession(sessionName: string): Promise<void> {
-  echo(chalk.green(`Creating new tmux session '${sessionName}' and starting pnpm dev...`))
-  await $`tmux new-session -d -s ${sessionName} 'pnpm dev'`
+  echo(chalk.green(`Creating new tmux session '${sessionName}' and starting npm run dev...`))
+  await $`tmux new-session -d -s ${sessionName} 'npm run dev'`
   echo(chalk.blue(`Development server started in tmux session '${sessionName}'`))
 }
 
