@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { $, chalk } from 'zx'
+import { $, chalk, argv, echo } from 'zx'
 import inquirer from 'inquirer'
 
 $.verbose = false
@@ -11,8 +11,23 @@ async function getFolderName(): Promise<string> {
   return path.split('/').pop() || 'tmuxdev'
 }
 
+async function getBranchName(): Promise<string> {
+  try {
+    const branch = await $`git branch --show-current`
+    return branch.stdout.trim()
+  } catch {
+    // Not a git repo or no git installed
+    return ''
+  }
+}
+
 async function getSessionName(): Promise<string> {
   const folderName = await getFolderName()
+  const branchName = await getBranchName()
+  
+  if (branchName) {
+    return `${folderName}-${branchName}`
+  }
   return folderName
 }
 
@@ -35,17 +50,16 @@ async function getAllSessions(): Promise<string[]> {
 }
 
 async function createSession(sessionName: string): Promise<void> {
-  console.log(chalk.green(`Creating new tmux session '${sessionName}' and starting pnpm dev...`))
+  echo(chalk.green(`Creating new tmux session '${sessionName}' and starting pnpm dev...`))
   await $`tmux new-session -d -s ${sessionName} 'pnpm dev'`
-  console.log(chalk.blue(`Development server started in tmux session '${sessionName}'`))
+  echo(chalk.blue(`Development server started in tmux session '${sessionName}'`))
 }
 
 async function attachSession(sessionName: string): Promise<void> {
-  console.log(chalk.green(`Attaching to tmux session '${sessionName}'...`))
-  // Use execSync with inherited stdio to properly attach to tmux
-  const { execSync } = await import('child_process')
+  echo(chalk.green(`Attaching to tmux session '${sessionName}'...`))
+  // Use zx with stdio option to properly attach to tmux
   try {
-    execSync(`tmux attach-session -t ${sessionName}`, { stdio: 'inherit' })
+    await $({ stdio: 'inherit' })`tmux attach-session -t ${sessionName}`
   } catch (error) {
     // tmux attach exits with code 0 on detach, so we can ignore errors
   }
@@ -53,7 +67,7 @@ async function attachSession(sessionName: string): Promise<void> {
 
 async function killSession(sessionName: string): Promise<void> {
   await $`tmux kill-session -t ${sessionName}`
-  console.log(chalk.red(`Killed session '${sessionName}'`))
+  echo(chalk.red(`Killed session '${sessionName}'`))
 }
 
 type ActionChoice = 'attach-current' | 'create-current' | 'select-existing' | 'kill-session' | 'exit'
@@ -66,14 +80,80 @@ interface Choice {
 async function main(): Promise<void> {
   const sessionName = await getSessionName()
   const exists = await sessionExists(sessionName)
-  const allSessions = await getAllSessions()
   
+  // Handle command line arguments
+  const command = argv._[0]
+  
+  if (command === 'start' || command === 's') {
+    if (exists) {
+      echo(chalk.yellow(`Session '${sessionName}' already exists. Attaching...`))
+      await attachSession(sessionName)
+    } else {
+      await createSession(sessionName)
+      await attachSession(sessionName)
+    }
+    return
+  }
+  
+  if (command === 'attach' || command === 'a') {
+    if (exists) {
+      await attachSession(sessionName)
+    } else {
+      echo(chalk.red(`Session '${sessionName}' does not exist.`))
+      const { create } = await inquirer.prompt<{ create: boolean }>([
+        {
+          type: 'confirm',
+          name: 'create',
+          message: 'Would you like to start it?',
+          default: true
+        }
+      ])
+      if (create) {
+        await createSession(sessionName)
+        await attachSession(sessionName)
+      }
+    }
+    return
+  }
+  
+  if (command === 'help' || command === 'h' || argv.help || argv.h) {
+    echo(chalk.blue.bold('\n🖥️  tmuxdev - Tmux session manager for development'))
+    echo(chalk.gray('  Automatically manages tmux sessions using folder and branch names'))
+    
+    echo(chalk.yellow('\n📋 Usage:'))
+    echo('  tmuxdev              ' + chalk.gray('Interactive mode with menu'))
+    echo('  tmuxdev start|s      ' + chalk.gray('Start and attach to session for current directory'))
+    echo('  tmuxdev attach|a     ' + chalk.gray('Attach to existing session for current directory'))
+    echo('  tmuxdev help|h       ' + chalk.gray('Show this help message'))
+    
+    echo(chalk.yellow('\n⚡ Quick Examples:'))
+    echo(chalk.gray('  # Quick start and attach'))
+    echo('  $ tmuxdev s')
+    echo(chalk.gray('  # Attach to existing session'))
+    echo('  $ tmuxdev a')
+    
+    echo(chalk.yellow('\n🎮 Tmux Controls:'))
+    echo('  Ctrl+B then D        ' + chalk.gray('Detach from session'))
+    echo('  Ctrl+B then [        ' + chalk.gray('Enter scroll/copy mode'))
+    echo('  Ctrl+B then %        ' + chalk.gray('Split pane vertically'))
+    echo('  Ctrl+B then "        ' + chalk.gray('Split pane horizontally'))
+    
+    echo(chalk.yellow('\n📦 Session Info:'))
+    echo('  Current directory: ' + chalk.cyan(await getFolderName()))
+    echo('  Session name:      ' + chalk.cyan(sessionName))
+    echo('  Session exists:    ' + (exists ? chalk.green('Yes') : chalk.red('No')))
+    
+    return
+  }
+  
+  // Interactive mode
+  const allSessions = await getAllSessions()
   const choices: Choice[] = []
   
   if (exists) {
     choices.push({ name: `Attach to current branch session (${sessionName})`, value: 'attach-current' })
   } else {
-    choices.push({ name: `Create new session for current branch (${sessionName})`, value: 'create-current' })
+    choices.push({ name: `Start new session for current directory (${sessionName})`, value: 'create-current' })
   }
   
   if (allSessions.length > 0) {
@@ -95,7 +175,7 @@ async function main(): Promise<void> {
     ])
     action = answer.action
   } catch (error) {
-    console.log(chalk.yellow('\nExiting...'))
+    echo(chalk.yellow('\nExiting...'))
     process.exit(0)
   }
   
@@ -117,8 +197,8 @@ async function main(): Promise<void> {
       if (attachNow) {
         await attachSession(sessionName)
       } else {
-        console.log(chalk.yellow(`To attach later, run: tmux attach-session -t '${sessionName}'`))
-        console.log(chalk.yellow(`To detach from the session, press: Ctrl+B then D`))
+        echo(chalk.yellow(`To attach later, run: tmux attach-session -t '${sessionName}'`))
+        echo(chalk.yellow(`To detach from the session, press: Ctrl+B then D`))
       }
       break
       
@@ -157,7 +237,7 @@ async function main(): Promise<void> {
       break
       
     case 'exit':
-      console.log(chalk.blue('Goodbye!'))
+      echo(chalk.blue('Goodbye!'))
       break
   }
 }
