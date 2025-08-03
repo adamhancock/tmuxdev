@@ -41,7 +41,7 @@ tmuxdev -h
 
 ### Default Behavior
 
-When you run `tmuxdev` without arguments, it automatically creates or attaches to a session for your current directory.
+When you run `tmuxdev` without arguments, it automatically creates or attaches to a session named after your current directory and git branch (e.g., `myproject-main`, `webapp-feature-auth`).
 
 ### Interactive Menu
 
