@@ -100,14 +100,21 @@ async function main(): Promise<void> {
       await attachSession(sessionName)
     } else {
       echo(chalk.red(`Session '${sessionName}' does not exist.`))
-      const { create } = await inquirer.prompt<{ create: boolean }>([
-        {
-          type: 'confirm',
-          name: 'create',
-          message: 'Would you like to start it?',
-          default: true
-        }
-      ])
+      let create: boolean
+      try {
+        const answer = await inquirer.prompt<{ create: boolean }>([
+          {
+            type: 'confirm',
+            name: 'create',
+            message: 'Would you like to start it?',
+            default: true
+          }
+        ])
+        create = answer.create
+      } catch (error) {
+        echo(chalk.yellow('\nExiting...'))
+        process.exit(0)
+      }
       if (create) {
         await createSession(sessionName)
         await attachSession(sessionName)
@@ -186,14 +193,21 @@ async function main(): Promise<void> {
       
     case 'create-current':
       await createSession(sessionName)
-      const { attachNow } = await inquirer.prompt<{ attachNow: boolean }>([
-        {
-          type: 'confirm',
-          name: 'attachNow',
-          message: 'Would you like to attach to the session now?',
-          default: true
-        }
-      ])
+      let attachNow: boolean
+      try {
+        const answer = await inquirer.prompt<{ attachNow: boolean }>([
+          {
+            type: 'confirm',
+            name: 'attachNow',
+            message: 'Would you like to attach to the session now?',
+            default: true
+          }
+        ])
+        attachNow = answer.attachNow
+      } catch (error) {
+        echo(chalk.yellow('\nExiting...'))
+        process.exit(0)
+      }
       if (attachNow) {
         await attachSession(sessionName)
       } else {
@@ -203,34 +217,57 @@ async function main(): Promise<void> {
       break
       
     case 'select-existing':
-      const { selectedSession } = await inquirer.prompt<{ selectedSession: string }>([
-        {
-          type: 'list',
-          name: 'selectedSession',
-          message: 'Select a session to attach to:',
-          choices: allSessions.map(s => ({ name: s, value: s }))
-        }
-      ])
+      let selectedSession: string
+      try {
+        const answer = await inquirer.prompt<{ selectedSession: string }>([
+          {
+            type: 'list',
+            name: 'selectedSession',
+            message: 'Select a session to attach to:',
+            choices: allSessions.map(s => ({ name: s, value: s }))
+          }
+        ])
+        selectedSession = answer.selectedSession
+      } catch (error) {
+        echo(chalk.yellow('\nExiting...'))
+        process.exit(0)
+      }
       await attachSession(selectedSession)
       break
       
     case 'kill-session':
-      const { sessionToKill } = await inquirer.prompt<{ sessionToKill: string }>([
-        {
-          type: 'list',
-          name: 'sessionToKill',
-          message: 'Select a session to kill:',
-          choices: allSessions.map(s => ({ name: s, value: s }))
-        }
-      ])
-      const { confirmKill } = await inquirer.prompt<{ confirmKill: boolean }>([
-        {
-          type: 'confirm',
-          name: 'confirmKill',
-          message: `Are you sure you want to kill session '${sessionToKill}'?`,
-          default: false
-        }
-      ])
+      let sessionToKill: string
+      try {
+        const answer = await inquirer.prompt<{ sessionToKill: string }>([
+          {
+            type: 'list',
+            name: 'sessionToKill',
+            message: 'Select a session to kill:',
+            choices: allSessions.map(s => ({ name: s, value: s }))
+          }
+        ])
+        sessionToKill = answer.sessionToKill
+      } catch (error) {
+        echo(chalk.yellow('\nExiting...'))
+        process.exit(0)
+      }
+      
+      let confirmKill: boolean
+      try {
+        const answer = await inquirer.prompt<{ confirmKill: boolean }>([
+          {
+            type: 'confirm',
+            name: 'confirmKill',
+            message: `Are you sure you want to kill session '${sessionToKill}'?`,
+            default: false
+          }
+        ])
+        confirmKill = answer.confirmKill
+      } catch (error) {
+        echo(chalk.yellow('\nExiting...'))
+        process.exit(0)
+      }
+      
       if (confirmKill) {
         await killSession(sessionToKill)
       }

@@ -1,6 +1,6 @@
 {
   "name": "@adamhancock/tmuxdev",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CLI tool to manage tmux sessions for development servers",
   "main": "dist/tmuxdev.js",
   "bin": {
